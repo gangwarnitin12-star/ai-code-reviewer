@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Code Reviewer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<header>
+    <div class="logo">🤖 AI Code Reviewer</div>
+
+    <div class="status">
+        <span></span> System Online
+    </div>
+</header>
+
+<main>
+
+    <section class="hero">
+        <h1>AI Code Reviewer</h1>
+
+        <p>
+            Automatically detect bugs, security issues and code quality problems.
+        </p>
+    </section>
+
+    <section class="review-card">
+
+        <div class="card-header">
+            <h2>Review Your Code</h2>
+            <span class="badge">JAVA</span>
+        </div>
+
+        <form id="reviewForm">
+
+            <textarea
+                id="codeInput"
+                placeholder="// Paste your Java code here..."
+                required>public class Demo {
+
+    public static void main(String[] args) {
+
+        int x = 10 / 0;
+
+        System.out.println(x);
+
+        String name = null;
+        System.out.println(name.length());
+    }
+}</textarea>
+
+            <button type="submit" id="reviewBtn">
+                🔍 Review Code
+            </button>
+
+        </form>
+
+        <div id="loading" class="loading hidden">
+            Analyzing your code...
+        </div>
+
+        <div class="result-section">
+
+            <h2>Review Result</h2>
+
+            <pre id="result">Your code review will appear here...</pre>
+
+        </div>
+
+    </section>
+
+    <section class="features">
+
+        <div class="feature">
+            <div>🐞</div>
+            <h3>Bug Detection</h3>
+            <p>Detect common programming errors.</p>
+        </div>
+
+        <div class="feature">
+            <div>🔐</div>
+            <h3>Security Checks</h3>
+            <p>Identify possible security risks.</p>
+        </div>
+
+        <div class="feature">
+            <div>⚡</div>
+            <h3>Code Quality</h3>
+            <p>Get suggestions to improve your code.</p>
+        </div>
+
+        <div class="feature">
+            <div>🔗</div>
+            <h3>GitHub Integration</h3>
+            <p>Automatically review Pull Requests.</p>
+        </div>
+
+    </section>
+
+</main>
+
+<footer>
+    AI Code Reviewer • Spring Boot + GitHub Webhooks
+</footer>
+
+
+<script>
+
+document.getElementById("reviewForm").addEventListener("submit", async function(event) {
+
+    // VERY IMPORTANT:
+    // Stop browser from opening /review as a new page
+    event.preventDefault();
+
+    const code = document.getElementById("codeInput").value;
+    const result = document.getElementById("result");
+    const loading = document.getElementById("loading");
+    const button = document.getElementById("reviewBtn");
+
+    if (!code.trim()) {
+        result.textContent = "⚠️ Please enter some code first.";
+        return;
+    }
+
+    loading.classList.remove("hidden");
+
+    button.disabled = true;
+    button.textContent = "Analyzing...";
+
+    result.textContent = "Analyzing your code...";
+
+    try {
+
+        const response = await fetch("/review", {
+            method: "POST",
+            headers: {
+                "Content-Type": "text/plain"
+            },
+            body: code
+        });
+
+        const review = await response.text();
+
+        if (!response.ok) {
+            throw new Error(review);
+        }
+
+        result.textContent = review;
+
+    } catch (error) {
+
+        console.error(error);
+
+        result.textContent =
+            "❌ Review failed.\n\n" +
+            error.message;
+
+    } finally {
+
+        loading.classList.add("hidden");
+
+        button.disabled = false;
+
+        button.textContent = "🔍 Review Code";
+    }
+
+});
+
+</script>
+
+</body>
+</html>
