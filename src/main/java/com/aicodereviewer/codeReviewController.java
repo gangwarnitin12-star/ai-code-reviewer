@@ -1,33 +1,23 @@
-// package com.aicodereviewer;
-// import
-// org.springframework.web.bind.annotation.RestController;
-// import
-// org.springframework.web.bind.annotation.GetMapping;
-// import
-// org.springframework.web.bind.annotation.PostMapping;
-// import
-// org.springframework.web.bind.annotation.RequestBody;
-
-// @RestController
-// public class codeReviewController{
-//     @GetMapping("/hello")
-//     public String hello() {
-//         return "Hello from AI Code Reviewer!";
-//     }
-//     @PostMapping("/webhook")
-//     public String webhook(@RequestBody String payload){
-//         System.out.println(payload);
-//         return "webhook received!";
-
-//     }
-    
-// }
 package com.aicodereviewer;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 public class codeReviewController {
+
+    private final OpenAIService openAIService;
+    private final GitHubService gitHubService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    public codeReviewController(
+            OpenAIService openAIService,
+            GitHubService gitHubService) {
+
+        this.openAIService = openAIService;
+        this.gitHubService = gitHubService;
+    }
 
     @GetMapping("/hello")
     public String hello() {
@@ -37,9 +27,73 @@ public class codeReviewController {
     @PostMapping("/webhook")
     public String webhook(@RequestBody String payload) {
 
-        System.out.println("GitHub Webhook Payload:");
-        System.out.println(payload);
+        try {
+            JsonNode root = objectMapper.readTree(payload);
 
-        return "Webhook received!";
+            String action = root.path("action").asText();
+            String repository = root.path("repository")
+                    .path("full_name").asText();
+            int prNumber = root.path("number").asInt();
+
+            System.out.println("===== GITHUB WEBHOOK =====");
+            System.out.println("Action: " + action);
+            System.out.println("Repository: " + repository);
+            System.out.println("PR Number: " + prNumber);
+
+            if (repository.isEmpty() || prNumber == 0) {
+                return "Invalid GitHub PR webhook payload";
+            }
+
+            String files = gitHubService.getPullRequestFiles(
+                    repository,
+                    prNumber
+            );
+            JsonNode filesJson = objectMapper.readTree(files);
+
+StringBuilder combinedCode = new StringBuilder();
+
+for (JsonNode file : filesJson) {
+
+    String filename = file.path("filename").asText();
+    String patch = file.path("patch").asText("");
+
+    System.out.println("Reviewing: " + filename);
+
+    if (!patch.isEmpty()) {
+        combinedCode.append("\n===== FILE: ")
+                .append(filename)
+                .append(" =====\n");
+
+        combinedCode.append(patch);
+        combinedCode.append("\n");
+    }
+}
+
+String review = openAIService.reviewCode(
+        combinedCode.toString()
+);
+gitHubService.addPullRequestComment(
+        repository,
+        prNumber,
+        review
+);
+
+System.out.println("===== CODE REVIEW =====");
+System.out.println(review);
+
+            System.out.println("===== PR FILES =====");
+            System.out.println(files);
+
+            return "Webhook processed successfully";
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "Webhook processing failed: " + e.getMessage();
+        }
+    }
+
+    @PostMapping("/review")
+    public String review(@RequestBody String code) {
+        return openAIService.reviewCode(code);
     }
 }
