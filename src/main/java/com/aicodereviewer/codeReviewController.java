@@ -2,6 +2,10 @@ package com.aicodereviewer;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -17,6 +21,17 @@ public class codeReviewController {
 
         this.openAIService = openAIService;
         this.gitHubService = gitHubService;
+    }
+
+    @GetMapping("/")
+    public ResponseEntity<Resource> home() {
+
+        ClassPathResource resource =
+                new ClassPathResource("static/index.html");
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.TEXT_HTML)
+                .body(resource);
     }
 
     @GetMapping("/hello")
@@ -48,41 +63,40 @@ public class codeReviewController {
                     repository,
                     prNumber
             );
+
             JsonNode filesJson = objectMapper.readTree(files);
 
-StringBuilder combinedCode = new StringBuilder();
+            StringBuilder combinedCode = new StringBuilder();
 
-for (JsonNode file : filesJson) {
+            for (JsonNode file : filesJson) {
 
-    String filename = file.path("filename").asText();
-    String patch = file.path("patch").asText("");
+                String filename = file.path("filename").asText();
+                String patch = file.path("patch").asText("");
 
-    System.out.println("Reviewing: " + filename);
+                System.out.println("Reviewing: " + filename);
 
-    if (!patch.isEmpty()) {
-        combinedCode.append("\n===== FILE: ")
-                .append(filename)
-                .append(" =====\n");
+                if (!patch.isEmpty()) {
+                    combinedCode.append("\n===== FILE: ")
+                            .append(filename)
+                            .append(" =====\n");
 
-        combinedCode.append(patch);
-        combinedCode.append("\n");
-    }
-}
+                    combinedCode.append(patch);
+                    combinedCode.append("\n");
+                }
+            }
 
-String review = openAIService.reviewCode(
-        combinedCode.toString()
-);
-gitHubService.addPullRequestComment(
-        repository,
-        prNumber,
-        review
-);
+            String review = openAIService.reviewCode(
+                    combinedCode.toString()
+            );
 
-System.out.println("===== CODE REVIEW =====");
-System.out.println(review);
+            gitHubService.addPullRequestComment(
+                    repository,
+                    prNumber,
+                    review
+            );
 
-            System.out.println("===== PR FILES =====");
-            System.out.println(files);
+            System.out.println("===== CODE REVIEW =====");
+            System.out.println(review);
 
             return "Webhook processed successfully";
 
