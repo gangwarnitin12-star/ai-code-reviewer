@@ -9,60 +9,113 @@ public class OpenAIService {
 
         StringBuilder review = new StringBuilder();
 
-        review.append("===== AI CODE REVIEW =====\n\n");
+        int bugs = 0;
+        int security = 0;
+        int quality = 0;
 
-        int issues = 0;
-        System.out.println("Demo Pull Request Code Review");
-        // 1. Division by zero
-        if (code.contains("/0") || code.contains("/ 0")) {
-            review.append("❌ BUG: Possible division by zero detected.\n");
-            review.append("   Suggestion: Check the denominator before division.\n\n");
-            issues++;
+        review.append("AI Analysis\n");
+        review.append("The Java code compiled successfully and passed the initial compiler check.\n\n");
+
+        // =========================
+        // BUG DETECTION
+        // =========================
+
+        review.append("🐞 BUGS\n");
+
+        if (code.matches("(?s).*/\\s*0(?![0-9]).*")) {
+
+            review.append("❌ Possible division by zero detected.\n");
+            review.append("Suggestion: Validate the denominator before division.\n");
+
+            bugs++;
         }
 
-        // 2. Null handling
         if (code.contains("null") && code.contains(".")) {
-            review.append("⚠️ WARNING: Possible NullPointerException risk.\n");
-            review.append("   Suggestion: Validate objects before using them.\n\n");
-            issues++;
+
+            review.append("⚠️ Possible NullPointerException risk detected.\n");
+            review.append("Suggestion: Validate objects before calling methods.\n");
+
+            bugs++;
         }
 
-        // 3. System.out.println
-        if (code.contains("System.out.println")) {
-            review.append("⚠️ CODE QUALITY: System.out.println() found.\n");
-            review.append("   Suggestion: Use a proper logging framework in production.\n\n");
-            issues++;
+        if (bugs == 0) {
+
+            review.append("✅ No common bug patterns detected.\n");
         }
 
-        // 4. Hardcoded credentials
+        // =========================
+        // SECURITY
+        // =========================
+
+        review.append("\n🔐 SECURITY ISSUES\n");
+
         String lowerCode = code.toLowerCase();
 
         if (lowerCode.contains("password")
                 || lowerCode.contains("apikey")
-                || lowerCode.contains("api_key")) {
+                || lowerCode.contains("api_key")
+                || lowerCode.contains("secret")) {
 
-            review.append("🔐 SECURITY: Possible hardcoded credential detected.\n");
-            review.append("   Suggestion: Use environment variables or a secret manager.\n\n");
-            issues++;
+            review.append("🔐 Possible hardcoded credential or secret detected.\n");
+            review.append("Suggestion: Use environment variables or a secret manager.\n");
+
+            security++;
         }
 
-        // 5. Large code
-        if (code.split("\n").length > 100) {
-            review.append("⚠️ CODE QUALITY: File appears very large.\n");
-            review.append("   Suggestion: Break the code into smaller methods/classes.\n\n");
-            issues++;
+        if (security == 0) {
+
+            review.append("✅ No common security patterns detected.\n");
         }
 
-        // No issues
-        if (issues == 0) {
-            review.append("✅ No common issues detected.\n");
-            review.append("Code looks good based on the current checks.\n");
+        // =========================
+        // CODE QUALITY
+        // =========================
+
+        review.append("\n⚡ CODE QUALITY ISSUES\n");
+
+        if (code.contains("System.out.println")) {
+
+            review.append("⚠️ System.out.println() found.\n");
+            review.append("Suggestion: Use a logging framework for production code.\n");
+
+            quality++;
         }
 
-        review.append("\nTotal issues found: ")
-                .append(issues);
+        if (code.split("\\R").length > 100) {
+
+            review.append("⚠️ Large source file detected.\n");
+            review.append("Suggestion: Break large classes or methods into smaller units.\n");
+
+            quality++;
+        }
+
+        if (quality == 0) {
+
+            review.append("✅ No common code-quality issues detected.\n");
+        }
+
+        // =========================
+        // SUMMARY
+        // =========================
+
+        review.append("\n========================\n");
+
+        review.append("SUMMARY\n");
+
+        review.append("Bugs: ")
+                .append(bugs)
+                .append("\n");
+
+        review.append("Security Issues: ")
+                .append(security)
+                .append("\n");
+
+        review.append("Code Quality Issues: ")
+                .append(quality)
+                .append("\n");
+
+        review.append("========================");
 
         return review.toString();
-        
     }
 }

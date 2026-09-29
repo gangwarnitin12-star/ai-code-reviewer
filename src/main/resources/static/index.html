@@ -1,136 +1,110 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Code Reviewer</title>
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>AI Code Reviewer</title>
+
+<link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
+<div class="container">
+
 <header>
-    <div class="logo">🤖 AI Code Reviewer</div>
+
+    <div class="brand">
+        🤖 AI Code Reviewer
+    </div>
 
     <div class="status">
-        <span></span> System Online
+        ● System Online
     </div>
+
 </header>
 
-<main>
 
-    <section class="hero">
-        <h1>AI Code Reviewer</h1>
+<section class="hero">
 
-        <p>
-            Automatically detect bugs, security issues and code quality problems.
-        </p>
-    </section>
+    <h1>
+        Java Code Review,
+        <span>Step by Step.</span>
+    </h1>
 
-    <section class="review-card">
+    <p>
+        First compile your Java code.
+        If compilation passes, the reviewer checks
+        bugs, security and code quality.
+    </p>
 
-        <div class="card-header">
-            <h2>Review Your Code</h2>
-            <span class="badge">JAVA</span>
-        </div>
+</section>
 
-        <form id="reviewForm">
 
-            <textarea
-                id="codeInput"
-                placeholder="// Paste your Java code here..."
-                required>public class Demo {
+<section class="card">
 
+    <label>Java Source Code</label>
+
+    <textarea id="code" placeholder="Paste Java code here...">public class Main {
     public static void main(String[] args) {
-
-        int x = 10 / 0;
-
-        System.out.println(x);
-
-        String name = null;
-        System.out.println(name.length());
+        int a = 10;
+        int b = 0;
+        System.out.println(a / b);
     }
 }</textarea>
 
-            <button type="submit" id="reviewBtn">
-                🔍 Review Code
-            </button>
+    <button id="reviewBtn" onclick="reviewCode()">
+        ▶ Review Code
+    </button>
 
-        </form>
+</section>
 
-        <div id="loading" class="loading hidden">
-            Analyzing your code...
-        </div>
 
-        <div class="result-section">
+<section id="result" class="result hidden">
 
-            <h2>Review Result</h2>
+    <div id="compilerBox" class="resultBox">
+    </div>
 
-            <pre id="result">Your code review will appear here...</pre>
+    <div id="analysisBox" class="resultBox hidden">
+    </div>
 
-        </div>
+    <div id="reviewBox" class="resultBox hidden">
+    </div>
 
-    </section>
+</section>
 
-    <section class="features">
-
-        <div class="feature">
-            <div>🐞</div>
-            <h3>Bug Detection</h3>
-            <p>Detect common programming errors.</p>
-        </div>
-
-        <div class="feature">
-            <div>🔐</div>
-            <h3>Security Checks</h3>
-            <p>Identify possible security risks.</p>
-        </div>
-
-        <div class="feature">
-            <div>⚡</div>
-            <h3>Code Quality</h3>
-            <p>Get suggestions to improve your code.</p>
-        </div>
-
-        <div class="feature">
-            <div>🔗</div>
-            <h3>GitHub Integration</h3>
-            <p>Automatically review Pull Requests.</p>
-        </div>
-
-    </section>
-
-</main>
 
 <footer>
-    AI Code Reviewer • Spring Boot + GitHub Webhooks
+
+    AI Code Reviewer • Java • Spring Boot • GitHub Integration
+
 </footer>
+
+</div>
 
 
 <script>
+async function reviewCode() {
 
-document.getElementById("reviewForm").addEventListener("submit", async function(event) {
-
-    // VERY IMPORTANT:
-    // Stop browser from opening /review as a new page
-    event.preventDefault();
-
-    const code = document.getElementById("codeInput").value;
+    const code = document.getElementById("code").value;
+    const btn = document.getElementById("reviewBtn");
     const result = document.getElementById("result");
-    const loading = document.getElementById("loading");
-    const button = document.getElementById("reviewBtn");
+    const compilerBox = document.getElementById("compilerBox");
+    const analysisBox = document.getElementById("analysisBox");
+    const reviewBox = document.getElementById("reviewBox");
 
     if (!code.trim()) {
-        result.textContent = "⚠️ Please enter some code first.";
+        alert("Please enter Java code.");
         return;
     }
 
-    loading.classList.remove("hidden");
+    btn.disabled = true;
+    btn.textContent = "⏳ Compiling...";
 
-    button.disabled = true;
-    button.textContent = "Analyzing...";
-
-    result.textContent = "Analyzing your code...";
+    result.classList.remove("hidden");
+    analysisBox.classList.add("hidden");
+    reviewBox.classList.add("hidden");
 
     try {
 
@@ -142,33 +116,81 @@ document.getElementById("reviewForm").addEventListener("submit", async function(
             body: code
         });
 
-        const review = await response.text();
-
         if (!response.ok) {
-            throw new Error(review);
+            throw new Error("HTTP " + response.status);
         }
 
-        result.textContent = review;
+        const data = await response.json();
+
+        if (data.compiled === true) {
+
+            compilerBox.className = "resultBox success";
+
+            compilerBox.innerHTML =
+                "<h3>✅ Java Compiler</h3>" +
+                "<p>" + escapeHtml(data.compilerMessage) + "</p>";
+
+            analysisBox.className = "resultBox analysis";
+
+            analysisBox.innerHTML =
+                "<h3>🤖 AI Analysis</h3>" +
+                "<p>" + escapeHtml(data.aiAnalysis) + "</p>";
+
+            analysisBox.classList.remove("hidden");
+
+            reviewBox.className = "resultBox review";
+
+            reviewBox.innerHTML =
+                "<h3>🔍 Review Results</h3>" +
+                "<pre>" + escapeHtml(data.review || "") + "</pre>";
+
+            reviewBox.classList.remove("hidden");
+
+        } else {
+
+            compilerBox.className = "resultBox error";
+
+            const errors =
+                (data.compilerErrors || []).join("\n");
+
+            compilerBox.innerHTML =
+                "<h3>❌ Java Compiler</h3>" +
+                "<p>" + escapeHtml(data.compilerMessage || "") + "</p>" +
+                "<pre>" + escapeHtml(errors) + "</pre>";
+        }
 
     } catch (error) {
 
-        console.error(error);
+        compilerBox.className = "resultBox error";
 
-        result.textContent =
-            "❌ Review failed.\n\n" +
-            error.message;
+        compilerBox.innerHTML =
+            "<h3>❌ Request Error</h3>" +
+            "<p>" + escapeHtml(error.message) + "</p>";
 
     } finally {
 
-        loading.classList.add("hidden");
-
-        button.disabled = false;
-
-        button.textContent = "🔍 Review Code";
+        btn.disabled = false;
+        btn.textContent = "▶ Review Code";
     }
+}
 
-});
+function escapeHtml(value) {
 
+    return String(value).replace(
+        /[&<>"']/g,
+        function (character) {
+
+            return {
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#039;"
+            }[character];
+
+        }
+    );
+}
 </script>
 
 </body>
