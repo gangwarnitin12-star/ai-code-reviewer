@@ -5,9 +5,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
 class AiCodeReviewerApplicationTests {
-System.out.println("Webhook Test");
+
 	@Test
-	void contextLoads() {
+	void contextLoads() 
+	System.out.println("Webhook Test");
+        System.out.println("AI Code Reviewer Webhook Test");
 	}
 
 }
