@@ -12,7 +12,7 @@ public class OpenAIService {
         review.append("===== AI CODE REVIEW =====\n\n");
 
         int issues = 0;
-
+        System.out.println("Demo Pull Request Code Review");
         // 1. Division by zero
         if (code.contains("/0") || code.contains("/ 0")) {
             review.append("❌ BUG: Possible division by zero detected.\n");
@@ -63,5 +63,6 @@ public class OpenAIService {
                 .append(issues);
 
         return review.toString();
+        
     }
 }
